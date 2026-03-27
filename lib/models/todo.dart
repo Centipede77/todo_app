@@ -2,9 +2,9 @@ class Todo {
   final int id;
   final int userId;
   final String title;
-  bool completed;
+  final bool completed;
 
-  Todo({
+  const Todo({
     required this.id,
     required this.userId,
     required this.title,
@@ -13,10 +13,10 @@ class Todo {
 
   factory Todo.fromJson(Map<String, dynamic> json) {
     return Todo(
-      id: json['id'],
-      userId: json['userId'],
-      title: json['title'],
-      completed: json['completed'],
+      id: json['id'] as int,
+      userId: json['userId'] as int,
+      title: json['title'] as String,
+      completed: json['completed'] as bool,
     );
   }
 
@@ -27,5 +27,19 @@ class Todo {
       'title': title,
       'completed': completed,
     };
+  }
+
+  Todo copyWith({
+    int? id,
+    int? userId,
+    String? title,
+    bool? completed,
+  }) {
+    return Todo(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      completed: completed ?? this.completed,
+    );
   }
 }

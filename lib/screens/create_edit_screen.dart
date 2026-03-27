@@ -1,97 +1,129 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+
 import '../models/todo.dart';
 import '../models/user.dart';
 
 class CreateEditScreen extends StatefulWidget {
   final Todo? todo;
-  CreateEditScreen({this.todo});
+  final List<User> users;
+
+  const CreateEditScreen({
+    super.key,
+    this.todo,
+    required this.users,
+  });
 
   @override
-  _CreateEditScreenState createState() => _CreateEditScreenState();
+  State<CreateEditScreen> createState() => _CreateEditScreenState();
 }
 
 class _CreateEditScreenState extends State<CreateEditScreen> {
-  final ApiService api = ApiService();
   final _formKey = GlobalKey<FormState>();
-  String title = '';
-  int? selectedUserId;
-  bool completed = false;
-  List<User> users = [];
+  late final TextEditingController _titleController;
+
+  int? _selectedUserId;
+  bool _completed = false;
+
+  bool get _isEdit => widget.todo != null;
 
   @override
   void initState() {
     super.initState();
-    api.fetchUsers().then((data) => setState(() {
-          users = data;
-          if (widget.todo != null) {
-            title = widget.todo!.title;
-            selectedUserId = widget.todo!.userId;
-            completed = widget.todo!.completed;
-          }
-        }));
+    _titleController = TextEditingController(text: widget.todo?.title ?? '');
+    _selectedUserId = widget.todo?.userId;
+    _completed = widget.todo?.completed ?? false;
   }
 
-  void saveTodo() async {
-    if (!_formKey.currentState!.validate() || selectedUserId == null) return;
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
 
-    final todo = Todo(
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedUserId == null) return;
+
+    final result = Todo(
       id: widget.todo?.id ?? 0,
-      userId: selectedUserId!,
-      title: title,
-      completed: completed,
+      userId: _selectedUserId!,
+      title: _titleController.text.trim(),
+      completed: _completed,
     );
 
-    try {
-      if (widget.todo == null) {
-        await api.createTodo(todo);
-      } else {
-        await api.updateTodo(todo);
-      }
-      Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
+    Navigator.pop(context, result);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.todo == null ? 'Create Todo' : 'Edit Todo')),
-      body: Padding(
-        padding: EdgeInsets.all(16),
+      appBar: AppBar(
+        title: Text(_isEdit ? 'Edit task' : 'Create task'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               DropdownButtonFormField<int>(
-                value: selectedUserId,
-                items: users
-                    .map((user) => DropdownMenuItem(
-                          value: user.id,
-                          child: Text(user.name),
-                        ))
+                value: _selectedUserId,
+                decoration: const InputDecoration(
+                  labelText: 'User',
+                  border: OutlineInputBorder(),
+                ),
+                items: widget.users
+                    .map(
+                      (user) => DropdownMenuItem<int>(
+                        value: user.id,
+                        child: Text(user.name),
+                      ),
+                    )
                     .toList(),
-                hint: Text('Select user'),
-                onChanged: (val) => setState(() => selectedUserId = val),
-                validator: (val) => val == null ? 'Choose user' : null,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedUserId = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) return 'Select a user';
+                  return null;
+                },
               ),
+              const SizedBox(height: 16),
               TextFormField(
-                initialValue: title,
-                decoration: InputDecoration(labelText: 'Title'),
-                onChanged: (val) => title = val,
-                validator: (val) => val == null || val.isEmpty ? 'Enter title' : null,
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Enter task title';
+                  }
+                  return null;
+                },
               ),
-              CheckboxListTile(
-                value: completed,
-                onChanged: (val) => setState(() => completed = val!),
-                title: Text('Completed'),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Completed'),
+                value: _completed,
+                onChanged: (value) {
+                  setState(() {
+                    _completed = value;
+                  });
+                },
               ),
-              ElevatedButton(
-                onPressed: saveTodo,
-                child: Text('Save'),
-              )
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _save,
+                  child: Text(_isEdit ? 'Save changes' : 'Create task'),
+                ),
+              ),
             ],
           ),
         ),

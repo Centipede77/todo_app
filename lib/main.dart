@@ -2,18 +2,22 @@ import 'package:flutter/material.dart';
 import 'screens/list_screen.dart';
 
 void main() {
-  runApp(TodoApp());
+  runApp(const TodoApp());
 }
 
 class TodoApp extends StatelessWidget {
+  const TodoApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TODO App',
+      debugShowCheckedModeBanner: false,
+      title: 'TODO Manager',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorSchemeSeed: Colors.blue,
+        useMaterial3: true,
       ),
-      home: ListScreen(),
+      home: const ListScreen(),
     );
   }
 }
